@@ -5,4 +5,4 @@
 아 그리고 저는 화성학과 음악에 대한 이해도가 1도 없고 AI 님들께 일일 강의 받은 게 끝이라서요  
 꾸밈음 같은 건 구현하지 못 했습니다 하하  
 누군가가 나를 이해시켜 준다면? 개발 고려해봄ㅋㅋ 마지막으로 에러떠도 그냥 그러려니 하세요 아직 밥 벌어먹고 사는 거 아니라서 ㄱㅊ아요  
-링크는 ehshfdlemfdkzheldgkwk.vercel.app
+링크는 https://ehshfdlemfdkzheldgkwk.vercel.app/
