@@ -157,7 +157,7 @@ function drawHand(lm) {
 
 function initMP() {
   const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.5});
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.5});
   hands.onResults(res=>{
     ctx.clearRect(0,0,cvs.width,cvs.height);
     if (res.multiHandLandmarks?.length) {
@@ -214,6 +214,7 @@ document.getElementById('start-btn').addEventListener('click',async()=>{
   await Tone.start();
   initAudio();
   document.getElementById('start-overlay').style.display='none';
+  document.getElementById('main').style.display = 'block';
   resizeCvs();
   buildPiano();
   initMP();
