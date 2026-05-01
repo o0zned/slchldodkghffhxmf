@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANDWAVE</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #111111;
+    --surface: #1a1a1a;
+    --raised:  #222222;
+    --border:  #2e2e2e;
+    --border2: #3a3a3a;
+    --text:    #e8e8e8;
+    --sub:     #888888;
+    --dim:     #444444;
+    --white:   #f5f5f5;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+/* MAIN */
+#main {
+flex: 1;
+position: relative;
+overflow: hidden;
+min-height: 0;
+}
+#webcam {
+position: absolute; inset: 0;
+width: 100%; height: 100%;
+object-fit: cover;
+opacity: 0.12;
+transform: scaleX(-1);
+}
+#canvas {
+position: absolute; inset: 0;
+width: 100%; height: 100%;
+transform: scaleX(-1);
+pointer-events: none;
+}
+
+/* TOP BAR */
+#topbar {
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 56px;
+display: flex; align-items: center; justify-content: space-between;
+padding: 0 20px;
+z-index: 50;
+background: linear-gradient(to bottom, rgba(17,17,17,0.9) 0%, transparent 100%);
+}
+#settings-btn {
+width: 36px; height: 36px;
+border-radius: 8px;
+border: 1px solid var(-border);
+background: var(-surface);
+display: flex; align-items: center; justify-content: center;
+cursor: pointer;
+transition: border-color 0.15s, background 0.15s;
+flex-shrink: 0;
+}
+#settings-btn:hover { border-color: var(-border2); background: var(-raised); }
+#settings-btn svg { width: 15px; height: 15px; stroke: var(-sub); }
+#app-name {
+font-family: 'DM Mono', monospace;
+font-size: 11px; letter-spacing: 0.3em;
+color: var(-dim); text-transform: uppercase;
+position: absolute; left: 50%; transform: translateX(-50%);
+}
+#hud { display: flex; align-items: center; gap: 6px; }
+.hud-pill {
+background: var(-surface);
+border: 1px solid var(-border);
+border-radius: 20px;
+padding: 5px 13px;
+display: flex; align-items: center; gap: 7px;
+}
+.hud-lbl {
+font-size: 9px; letter-spacing: 0.12em;
+color: var(-dim); text-transform: uppercase;
+font-family: 'DM Mono', monospace;
+}
+.hud-val {
+font-family: 'DM Mono', monospace;
+font-size: 13px; font-weight: 500; color: var(-text);
+}
+.hud-val.chord { color: var(-white); font-size: 14px; }
+
+/* SETTINGS PANEL */
+#settings-panel {
+position: absolute;
+top: 56px; left: 20px;
+z-index: 60;
+width: 230px;
+background: var(-surface);
+border: 1px solid var(-border);
+border-radius: 12px;
+padding: 16px;
+display: none; flex-direction: column; gap: 13px;
+box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+#settings-panel.open { display: flex; }
+.s-head {
+font-family: 'DM Mono', monospace;
+font-size: 9px; letter-spacing: 0.2em;
+color: var(-dim); text-transform: uppercase;
+border-bottom: 1px solid var(-border);
+padding-bottom: 8px;
+}
+.s-row { display: flex; flex-direction: column; gap: 5px; }
+.s-lbl { font-size: 11px; color: var(-sub); font-family: 'DM Mono', monospace; }
+.s-sel {
+background: var(-raised);
+border: 1px solid var(-border);
+border-radius: 6px;
+color: var(-text);
+font-family: 'DM Mono', monospace;
+font-size: 12px;
+padding: 6px 10px;
+outline: none; cursor: pointer;
+appearance: none; -webkit-appearance: none;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 10px center;
+padding-right: 28px;
+transition: border-color 0.15s;
+}
+.s-sel:hover { border-color: var(-border2); }
+.s-rrow { display: flex; align-items: center; gap: 10px; }
+.s-range {
+select {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+}
+height: 3px; background: var(-border2);
+border-radius: 2px; outline: none; cursor: pointer;
+}
+.s-range::-webkit-slider-thumb {
+-webkit-appearance: none;
+width: 13px; height: 13px;
+border-radius: 50%; background: var(-text); cursor: pointer;
+transition: transform 0.1s;
+}
+.s-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.s-rval {
+font-family: 'DM Mono', monospace;
+font-size: 11px; color: var(-sub); min-width: 30px; text-align: right;
+}
+
+/* VOLUME STRIP */
+#vol-wrap {
+position: absolute;
+left: 20px; top: 72px; bottom: 24px;
+width: 20px; z-index: 40;
+display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+#vol-lbl {
+font-family: 'DM Mono', monospace;
+font-size: 9px; color: var(-dim);
+letter-spacing: 0.12em; text-transform: uppercase;
+writing-mode: vertical-rl; transform: rotate(180deg);
+}
+#vol-track {
+flex: 1; width: 2px;
+background: var(-border); border-radius: 1px;
+overflow: hidden; position: relative;
+}
+#vol-fill {
+position: absolute; bottom: 0; left: 0; right: 0;
+background: var(-dim); border-radius: 1px;
+transition: height 0.1s;
+}
+
+/* CENTER */
+#center-info {
+position: absolute; top: 50%; left: 50%;
+transform: translate(-50%, -50%);
+text-align: center; pointer-events: none; z-index: 20;
+display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+#chord-roman {
+font-family: 'DM Mono', monospace;
+font-size: 11px; letter-spacing: 0.25em;
+color: transparent; text-transform: uppercase;
+transition: color 0.35s;
+}
+#chord-roman.lit { color: var(-dim); }
+#chord-main {
+font-family: 'DM Sans', sans-serif;
+font-weight: 300; font-size: 86px;
+color: transparent;
+letter-spacing: -0.03em; line-height: 1;
+transition: color 0.4s; white-space: nowrap;
+}
+#chord-main.lit { color: rgba(232,232,232,0.18); }
+
+/* FINGER NUM */
+#finger-wrap {
+position: absolute; right: 20px; bottom: 20px;
+z-index: 40; text-align: right;
+}
+#finger-num {
+font-family: 'DM Mono', monospace;
+font-size: 80px; font-weight: 300;
+color: transparent; line-height: 1;
+transition: color 0.15s;
+}
+#finger-num.lit { color: rgba(232,232,232,0.12); }
+#finger-lbl {
+font-family: 'DM Mono', monospace;
+font-size: 9px; color: var(-dim); letter-spacing: 0.15em; text-transform: uppercase;
+}
+
+/* PIANO */
+#piano-bar {
+height: 78px;
+background: var(-surface);
+border-top: 1px solid var(-border);
+display: flex; align-items: stretch;
+z-index: 60; flex-shrink: 0; overflow: hidden;
+}
+.p-key {
+flex: 1; min-width: 0;
+display: flex; flex-direction: column;
+align-items: center; justify-content: flex-end;
+padding-bottom: 11px;
+cursor: pointer;
+border-right: 1px solid var(-border);
+transition: background 0.12s;
+user-select: none; position: relative;
+}
+.p-key:last-child { border-right: none; }
+.p-key:hover { background: var(-raised); }
+.p-key.selected { background: var(-raised); }
+.p-key.sharp { background: var(-bg); }
+.p-key.sharp:hover { background: #191919; }
+.p-key.sharp.selected { background: #1e1e1e; }
+.p-dot {
+position: absolute; top: 10px;
+left: 50%; transform: translateX(-50%);
+width: 4px; height: 4px; border-radius: 50%;
+background: transparent; transition: background 0.12s;
+}
+.p-key.selected .p-dot { background: var(-sub); }
+.p-name {
+font-family: 'DM Mono', monospace;
+font-size: 11px; color: var(-dim);
+transition: color 0.12s;
+}
+.p-key.selected .p-name { color: var(-text); }
+.p-key.sharp .p-name { color: var(-border2); }
+.p-key.sharp.selected .p-name { color: var(-sub); }
+
+/* START OVERLAY */
+#start-overlay {
+position: fixed; inset: 0; z-index: 200;
+background: var(-bg);
+display: flex; flex-direction: column;
+align-items: center; justify-content: center; gap: 14px;
+}
+.s-wordmark {
+font-family: 'DM Mono', monospace;
+font-size: 10px; letter-spacing: 0.45em;
+color: var(-dim); text-transform: uppercase;
+margin-bottom: 6px;
+}
+.s-h {
+font-family: 'DM Sans', sans-serif;
+font-weight: 300; font-size: 40px;
+color: var(-text); letter-spacing: -0.02em;
+text-align: center; line-height: 1.2;
+}
+.s-h em { font-style: normal; color: var(-sub); }
+.s-desc {
+font-size: 12px; color: var(-dim);
+line-height: 2; text-align: center;
+font-family: 'DM Mono', monospace;
+margin-top: 4px;
+}
+.s-go {
+margin-top: 14px;
+background: var(-text); border: none; border-radius: 8px;
+padding: 11px 30px;
+color: var(-bg);
+font-family: 'DM Sans', sans-serif;
+font-weight: 500; font-size: 14px;
+cursor: pointer; letter-spacing: 0.02em;
+transition: opacity 0.15s, transform 0.15s;
+}
+.s-go:hover { opacity: 0.82; transform: scale(1.02); }
+#no-cam {
+display: none; position: absolute;
+top: 50%; left: 50%; transform: translate(-50%,-50%);
+z-index: 80; font-family: 'DM Mono', monospace;
+font-size: 12px; color: var(-dim); text-align: center; line-height: 1.8;
+}
+</style>
+
+</head>
+<body>
+
+<div id="start-overlay">
+  <div class="s-wordmark">Handwave</div>
+  <div class="s-h">손으로 연주하는<br><em>다이아토닉 악기</em></div>
+  <div class="s-desc">
+    손가락 개수 → Ⅰ-Ⅶ 코드 선택<br>
+    손의 거리 → 볼륨 제어<br>
+    하단 건반 → 키 변경
+  </div>
+  <button class="s-go" id="start-btn">시작하기</button>
+</div>
+
+<div id="main">
+  <video id="webcam" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <div id="topbar">
+    <div id="settings-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+    </div>
+    <div id="app-name">Handwave</div>
+    <div id="hud">
+      <div class="hud-pill"><span class="hud-lbl">손가락</span><span class="hud-val" id="hud-fingers">—</span></div>
+      <div class="hud-pill"><span class="hud-lbl">코드</span><span class="hud-val chord" id="hud-chord">—</span></div>
+      <div class="hud-pill"><span class="hud-lbl">키</span><span class="hud-val" id="hud-key">C</span></div>
+    </div>
+  </div>
+
+  <div id="settings-panel">
+    <div class="s-head">설정</div>
+    <div class="s-row">
+      <div class="s-lbl">스케일</div>
+      <select class="s-sel" id="scale-select">
+        <option value="major">메이저 (이오니안)</option>
+        <option value="dorian">도리안</option>
+        <option value="phrygian">프리지안</option>
+        <option value="lydian">리디안</option>
+        <option value="mixolydian">믹소리디안</option>
+        <option value="minor">내추럴 마이너</option>
+        <option value="locrian">로크리안</option>
+      </select>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">코드 타입</div>
+      <select class="s-sel" id="chord-type">
+        <option value="triad">3화음</option>
+        <option value="seventh">7화음</option>
+        <option value="power">파워코드</option>
+      </select>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">음색</div>
+      <select class="s-sel" id="synth-type">
+        <option value="poly">폴리신스</option>
+        <option value="fm">FM 신스</option>
+        <option value="am">AM 신스</option>
+      </select>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">옥타브</div>
+      <select class="s-sel" id="octave-select">
+        <option value="2">2 — 낮음</option>
+        <option value="3" selected>3 — 중간</option>
+        <option value="4">4 — 높음</option>
+      </select>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">전환 딜레이</div>
+      <div class="s-rrow">
+        <input type="range" class="s-range" id="delay-range" min="0.1" max="1.0" step="0.05" value="0.4">
+        <span class="s-rval" id="delay-val">0.4s</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="vol-wrap">
+    <div id="vol-lbl">vol</div>
+    <div id="vol-track"><div id="vol-fill" style="height:50%"></div></div>
+  </div>
+
+  <div id="center-info">
+    <div id="chord-roman">—</div>
+    <div id="chord-main">—</div>
+  </div>
+
+  <div id="finger-wrap">
+    <div id="finger-num">—</div>
+    <div id="finger-lbl">fingers</div>
+  </div>
+
+  <div id="no-cam">웹캠을 찾을 수 없습니다<br>권한을 확인해 주세요</div>
+</div>
+
+<div id="piano-bar"></div>
+
+<script>
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const ROMAN = ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ'];
+const SCALES = {
+  major:      { intervals:[0,2,4,5,7,9,11], q:['maj','min','min','maj','maj','min','dim'] },
+  dorian:     { intervals:[0,2,3,5,7,9,10], q:['min','min','maj','maj','min','dim','maj'] },
+  phrygian:   { intervals:[0,1,3,5,7,8,10], q:['min','maj','maj','min','dim','maj','min'] },
+  lydian:     { intervals:[0,2,4,6,7,9,11], q:['maj','maj','min','dim','maj','min','min'] },
+  mixolydian: { intervals:[0,2,4,5,7,9,10], q:['maj','min','dim','maj','min','min','maj'] },
+  minor:      { intervals:[0,2,3,5,7,8,10], q:['min','dim','maj','min','min','maj','maj'] },
+  locrian:    { intervals:[0,1,3,5,6,8,10], q:['dim','maj','min','min','maj','maj','min'] },
+};
+
+function midiToFreq(m) { return 440*Math.pow(2,(m-69)/12); }
+
+function chordNotes(rootSemi, q, type, oct) {
+  const b = rootSemi + oct*12;
+  if (type==='power') return [b, b+7];
+  let iv = q==='maj' ? (type==='seventh'?[0,4,7,11]:[0,4,7])
+         : q==='min' ? (type==='seventh'?[0,3,7,10]:[0,3,7])
+         :              (type==='seventh'?[0,3,6,10]:[0,3,6]);
+  return iv.map(i=>b+i);
+}
+
+function chordLabel(ri, q, type) {
+  return NOTES[ri]+(q==='maj'?'':q==='min'?'m':'dim')+(type==='seventh'?'7':type==='power'?'5':'');
+}
+
+const S = { key:0, scaleName:'major', octave:3, chordType:'triad', synthType:'poly',
+            delayMs:400, volume:0.5, currentDegree:-1, pendingDegree:-1, pendingTimer:null };
+
+let synth=null, volNode=null;
+
+function initAudio() { rebuildSynth(S.synthType); }
+
+function rebuildSynth(type) {
+  if (synth) { try{synth.releaseAll();}catch(e){} synth.dispose(); synth=null; }
+  if (volNode) { volNode.dispose(); volNode=null; }
+  volNode = new Tone.Volume(-8).toDestination();
+  const opts = { envelope:{attack:0.04,decay:0.2,sustain:0.7,release:1.2} };
+  synth = type==='fm'
+    ? new Tone.PolySynth(Tone.FMSynth,{...opts,harmonicity:3,modulationIndex:8}).connect(volNode)
+    : type==='am'
+    ? new Tone.PolySynth(Tone.AMSynth,{...opts,harmonicity:2}).connect(volNode)
+    : new Tone.PolySynth(Tone.Synth,{...opts,oscillator:{type:'triangle'}}).connect(volNode);
+}
+
+function setVol(v) { if(volNode) volNode.volume.rampTo(Tone.gainToDb(Math.max(0.001,v)),0.08); }
+
+function playChord(deg) {
+  if (!synth) return;
+  const sc = SCALES[S.scaleName];
+  const ri = (S.key + sc.intervals[deg]) % 12;
+  const freqs = chordNotes(ri, sc.q[deg], S.chordType, S.octave).map(midiToFreq);
+  synth.releaseAll();
+  setTimeout(() => synth.triggerAttack(freqs), 20);
+}
+
+function stopAll() { if(synth) synth.releaseAll(); }
+
+function buildPiano() {
+  const bar = document.getElementById('piano-bar');
+  bar.innerHTML = '';
+  NOTES.forEach((n,i) => {
+    const k = document.createElement('div');
+    k.className = 'p-key'+(n.includes('#')?' sharp':'');
+    k.dataset.i = i;
+    const dot = document.createElement('div'); dot.className='p-dot';
+    const nm  = document.createElement('div'); nm.className='p-name'; nm.textContent=n;
+    k.appendChild(dot); k.appendChild(nm);
+    k.addEventListener('click', ()=>selectKey(i));
+    bar.appendChild(k);
+  });
+  refreshPiano();
+}
+
+function refreshPiano() {
+  document.querySelectorAll('.p-key').forEach(k=>{
+    k.classList.toggle('selected', parseInt(k.dataset.i)===S.key);
+  });
+  document.getElementById('hud-key').textContent = NOTES[S.key];
+}
+
+function selectKey(i) {
+  S.key=i; refreshPiano();
+  if (S.currentDegree>=0) { playChord(S.currentDegree); refreshChordUI(S.currentDegree); }
+}
+
+function scheduleDegree(deg) {
+  if (deg===S.pendingDegree) return;
+  S.pendingDegree=deg;
+  if (S.pendingTimer) clearTimeout(S.pendingTimer);
+  S.pendingTimer = setTimeout(()=>{
+    if (deg===S.currentDegree) return;
+    S.currentDegree=deg;
+    if (deg>=0) { playChord(deg); refreshChordUI(deg); }
+    else { stopAll(); clearChordUI(); }
+  }, S.delayMs);
+}
+
+function refreshChordUI(deg) {
+  const sc = SCALES[S.scaleName];
+  const ri = (S.key + sc.intervals[deg]) % 12;
+  const label = chordLabel(ri, sc.q[deg], S.chordType);
+  document.getElementById('hud-chord').textContent = `${ROMAN[deg]} · ${label}`;
+  document.getElementById('chord-main').textContent = label;
+  document.getElementById('chord-roman').textContent = ROMAN[deg];
+  ['chord-main','chord-roman'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.classList.add('lit');
+    setTimeout(()=>el.classList.remove('lit'), 700);
+  });
+}
+
+function clearChordUI() {
+  document.getElementById('hud-chord').textContent='—';
+  document.getElementById('chord-main').textContent='—';
+  document.getElementById('chord-roman').textContent='—';
+}
+
+const TIPS=[4,8,12,16,20], BASE=[3,6,10,14,18];
+const vid=document.getElementById('webcam'), cvs=document.getElementById('canvas');
+const ctx=cvs.getContext('2d');
+
+function resizeCvs() { cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight; }
+window.addEventListener('resize', resizeCvs);
+
+function countFingers(lm) {
+  let n=0;
+  if (lm[4].x < lm[3].x) n++;
+  for (let i=1;i<5;i++) if (lm[TIPS[i]].y < lm[BASE[i]].y) n++;
+  return n;
+}
+
+function drawHand(lm) {
+  const w=cvs.width,h=cvs.height;
+  const C=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+            [9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(180,180,180,0.2)';
+  ctx.lineWidth=1.5;
+  C.forEach(([a,b])=>{
+    ctx.beginPath();
+    ctx.moveTo(lm[a].x*w,lm[a].y*h);
+    ctx.lineTo(lm[b].x*w,lm[b].y*h);
+    ctx.stroke();
+  });
+  lm.forEach((p,i)=>{
+    const t=TIPS.includes(i);
+    ctx.beginPath();
+    ctx.arc(p.x*w,p.y*h,t?5:3,0,Math.PI*2);
+    ctx.fillStyle=t?'rgba(220,220,220,0.75)':'rgba(130,130,130,0.5)';
+    ctx.fill();
+  });
+}
+
+function initMP() {
+  const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.5});
+  hands.onResults(res=>{
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    if (res.multiHandLandmarks?.length) {
+      const lm=res.multiHandLandmarks[0];
+      drawHand(lm);
+      const f=countFingers(lm);
+      const z=lm[0].z;
+      const v=Math.max(0,Math.min(1,1-((z+0.25)/0.3)));
+      S.volume=v; setVol(v);
+      document.getElementById('vol-fill').style.height=(v*100)+'%';
+      document.getElementById('hud-fingers').textContent=f;
+      const fn=document.getElementById('finger-num');
+      fn.textContent=f; fn.classList.toggle('lit',f>0);
+      scheduleDegree(f>=1&&f<=7?f-1:-1);
+    } else {
+      document.getElementById('hud-fingers').textContent='—';
+      const fn=document.getElementById('finger-num');
+      fn.textContent='—'; fn.classList.remove('lit');
+      scheduleDegree(-1);
+    }
+  });
+  const cam=new Camera(vid,{onFrame:async()=>{await hands.send({image:vid});},width:640,height:480});
+  cam.start().catch(()=>{document.getElementById('no-cam').style.display='block';});
+}
+
+document.getElementById('settings-btn').addEventListener('click',()=>{
+  document.getElementById('settings-panel').classList.toggle('open');
+});
+document.addEventListener('click',e=>{
+  const p=document.getElementById('settings-panel'),b=document.getElementById('settings-btn');
+  if(!p.contains(e.target)&&!b.contains(e.target)) p.classList.remove('open');
+});
+document.getElementById('scale-select').addEventListener('change',e=>{
+  S.scaleName=e.target.value;
+  if(S.currentDegree>=0){playChord(S.currentDegree);refreshChordUI(S.currentDegree);}
+});
+document.getElementById('chord-type').addEventListener('change',e=>{
+  S.chordType=e.target.value;
+  if(S.currentDegree>=0){playChord(S.currentDegree);refreshChordUI(S.currentDegree);}
+});
+document.getElementById('synth-type').addEventListener('change',e=>{
+  S.synthType=e.target.value; rebuildSynth(e.target.value); setVol(S.volume);
+});
+document.getElementById('octave-select').addEventListener('change',e=>{
+  S.octave=parseInt(e.target.value);
+  if(S.currentDegree>=0) playChord(S.currentDegree);
+});
+document.getElementById('delay-range').addEventListener('input',e=>{
+  S.delayMs=parseFloat(e.target.value)*1000;
+  document.getElementById('delay-val').textContent=e.target.value+'s';
+});
+
+document.getElementById('start-btn').addEventListener('click',async()=>{
+  await Tone.start();
+  initAudio();
+  document.getElementById('start-overlay').style.display='none';
+  resizeCvs();
+  buildPiano();
+  initMP();
+});
+</script>
+
+</body>
+</html>

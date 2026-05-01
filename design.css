@@ -1,0 +1,223 @@
+:root {
+  --bg: #111111;
+  --surface: #1a1a1a;
+  --raised: #222222;
+  --border: #2e2e2e;
+  --border2: #3a3a3a;
+  --text: #e8e8e8;
+  --sub: #888888;
+  --dim: #444444;
+  --white: #f5f5f5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* MAIN */
+#main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#webcam {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.12;
+  transform: scaleX(-1);
+}
+
+#canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+/* TOP BAR */
+#topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 50;
+  background: linear-gradient(to bottom, rgba(17,17,17,0.9) 0%, transparent 100%);
+}
+
+#settings-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+#settings-btn:hover {
+  border-color: var(--border2);
+  background: var(--raised);
+}
+
+#settings-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--sub);
+}
+
+#app-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  text-transform: uppercase;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hud-lbl {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+}
+
+.hud-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.hud-val.chord {
+  color: var(--white);
+  font-size: 14px;
+}
+
+/* SETTINGS PANEL */
+#settings-panel {
+  position: absolute;
+  top: 56px;
+  left: 20px;
+  z-index: 60;
+  width: 230px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: none;
+  flex-direction: column;
+  gap: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+#settings-panel.open {
+  display: flex;
+}
+
+.s-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.s-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.s-lbl {
+  font-size: 11px;
+  color: var(--sub);
+  font-family: 'DM Mono', monospace;
+}
+
+.s-sel {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.s-sel:hover {
+  border-color: var(--border2);
+}
+
+.s-range {
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.s-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: pointer;
+}
