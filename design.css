@@ -10,7 +10,7 @@
   --white: #f5f5f5;
 }
 
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -22,16 +22,15 @@ body {
   font-family: 'DM Sans', sans-serif;
   height: 100vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
-/* MAIN */
+/* ── MAIN LAYOUT ── */
 #main {
-  flex: 1;
+  display: none;
   position: relative;
+  width: 100%;
+  height: 100vh;
   overflow: hidden;
-  min-height: 0;
 }
 
 #webcam {
@@ -53,7 +52,62 @@ body {
   pointer-events: none;
 }
 
-/* TOP BAR */
+/* ── START SCREEN ── */
+#start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-inner { text-align: center; }
+
+.s-wordmark {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.s-h {
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  color: var(--sub);
+}
+
+.s-h em {
+  font-style: normal;
+  color: var(--white);
+}
+
+.s-desc {
+  font-size: 15px;
+  color: #aaa;
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+
+.s-go {
+  background: var(--white);
+  color: var(--bg);
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.s-go:hover { opacity: 0.8; }
+
+/* ── TOP BAR ── */
 #topbar {
   position: absolute;
   top: 0;
@@ -78,8 +132,8 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
   flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 #settings-btn:hover {
@@ -91,17 +145,21 @@ body {
   width: 15px;
   height: 15px;
   stroke: var(--sub);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 
 #app-name {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.3em;
   color: var(--dim);
   text-transform: uppercase;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 #hud {
@@ -121,11 +179,11 @@ body {
 }
 
 .hud-lbl {
+  font-family: 'DM Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.12em;
   color: var(--dim);
   text-transform: uppercase;
-  font-family: 'DM Mono', monospace;
 }
 
 .hud-val {
@@ -140,7 +198,7 @@ body {
   font-size: 14px;
 }
 
-/* SETTINGS PANEL */
+/* ── SETTINGS PANEL ── */
 #settings-panel {
   position: absolute;
   top: 56px;
@@ -157,9 +215,7 @@ body {
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 
-#settings-panel.open {
-  display: flex;
-}
+#settings-panel.open { display: flex; }
 
 .s-head {
   font-family: 'DM Mono', monospace;
@@ -167,8 +223,8 @@ body {
   letter-spacing: 0.2em;
   color: var(--dim);
   text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 
 .s-row {
@@ -178,9 +234,9 @@ body {
 }
 
 .s-lbl {
+  font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--sub);
-  font-family: 'DM Mono', monospace;
 }
 
 .s-sel {
@@ -190,7 +246,7 @@ body {
   color: var(--text);
   font-family: 'DM Mono', monospace;
   font-size: 12px;
-  padding: 6px 10px;
+  padding: 6px 28px 6px 10px;
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -198,19 +254,25 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  padding-right: 28px;
 }
 
-.s-sel:hover {
-  border-color: var(--border2);
+.s-sel:hover { border-color: var(--border2); }
+
+.s-rrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .s-range {
+  flex: 1;
   height: 3px;
   background: var(--border2);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .s-range::-webkit-slider-thumb {
@@ -221,3 +283,194 @@ body {
   background: var(--text);
   cursor: pointer;
 }
+
+.s-rval {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--sub);
+  min-width: 30px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── VOLUME BAR ── */
+#vol-wrap {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 40;
+}
+
+#vol-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+#vol-track {
+  width: 4px;
+  height: 100px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+#vol-fill {
+  width: 100%;
+  background: var(--text);
+  border-radius: 2px;
+  transition: height 0.08s linear;
+}
+
+/* ── CENTER CHORD DISPLAY ── */
+#center-info {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#chord-roman {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+  transition: color 0.3s;
+}
+
+#chord-main {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 56px;
+  font-weight: 300;
+  color: var(--sub);
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+}
+
+#chord-roman.lit,
+#chord-main.lit { color: var(--white); }
+
+/* ── FINGER COUNTER ── */
+#finger-wrap {
+  position: absolute;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#finger-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 36px;
+  color: var(--dim);
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+#finger-num.lit { color: var(--white); }
+
+#finger-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── NO CAMERA ── */
+#no-cam {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.8;
+  z-index: 100;
+}
+
+/* ── PIANO BAR ── */
+#piano-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 24px 16px;
+  background: linear-gradient(to top, rgba(17,17,17,0.97) 60%, transparent);
+}
+
+.p-key {
+  flex: 1;
+  max-width: 52px;
+  height: 72px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 6px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.p-key:hover {
+  background: var(--raised);
+  border-color: var(--border2);
+}
+
+.p-key.sharp {
+  height: 46px;
+  max-width: 34px;
+  background: var(--bg);
+  border-color: var(--border2);
+}
+
+.p-key.sharp:hover { background: #1c1c1c; }
+
+.p-key.selected {
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.p-key.selected .p-name { color: var(--bg); }
+
+.p-dot { display: none; }
+
+.p-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--sub);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.p-key.sharp .p-name { font-size: 8px; }
