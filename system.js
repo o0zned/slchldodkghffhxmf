@@ -1,3 +1,4 @@
+// Music constants data
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const ROMAN = ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ'];
 const SCALES = {
@@ -11,7 +12,7 @@ const SCALES = {
 };
 
 
-
+// functions for conversions
 function midiToFreq(m) { return 440*Math.pow(2,(m-69)/12); }
 
 function chordNotes(rootSemi, q, type, oct) {
@@ -27,11 +28,22 @@ function chordLabel(ri, q, type) {
   return NOTES[ri]+(q==='maj'?'':q==='min'?'m':'dim')+(type==='seventh'?'7':type==='power'?'5':'');
 }
 
-const S = { key:0, scaleName:'major', octave:3, chordType:'triad', synthType:'poly',
-            delayMs:400, volume:0.5, currentDegree:-1, pendingDegree:-1, pendingTimer:null };
+// system state and variables
+const S = { key:0,
+  scaleName:'major',
+  octave:3,
+  chordType:'triad',
+  synthType:'poly',
+  delayMs:400,
+  volume:0.5,
+  currentDegree:-1,
+  pendingDegree:-1,
+  pendingTimer:null };
 
-let synth=null, volNode=null;
+let synth=null,
+  volNode=null;
 
+// audio engine
 function initAudio() { rebuildSynth(S.synthType); }
 
 function rebuildSynth(type) {
@@ -59,6 +71,7 @@ function playChord(deg) {
 
 function stopAll() { if(synth) synth.releaseAll(); }
 
+// piano UI
 function buildPiano() {
   const bar = document.getElementById('piano-bar');
   bar.innerHTML = '';
@@ -87,6 +100,8 @@ function selectKey(i) {
   if (S.currentDegree>=0) { playChord(S.currentDegree); refreshChordUI(S.currentDegree); }
 }
 
+// debounce the chord
+
 function scheduleDegree(deg) {
   if (deg===S.pendingDegree) return;
   S.pendingDegree=deg;
@@ -98,6 +113,8 @@ function scheduleDegree(deg) {
     else { stopAll(); clearChordUI(); }
   }, S.delayMs);
 }
+
+// hud and chord ui
 
 function refreshChordUI(deg) {
   const sc = SCALES[S.scaleName];
@@ -119,7 +136,10 @@ function clearChordUI() {
   document.getElementById('chord-roman').textContent='—';
 }
 
-const TIPS=[4,8,12,16,20], BASE=[3,6,10,14,18];
+// hand tracking
+
+const TIPS=[4,8,12,16,20],
+      BASE=[3,6,10,14,18];
 const vid=document.getElementById('webcam'), cvs=document.getElementById('canvas');
 const ctx=cvs.getContext('2d');
 
@@ -156,33 +176,60 @@ function drawHand(lm) {
 }
 
 function initMP() {
-  const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.5});
-  hands.onResults(res=>{
-    ctx.clearRect(0,0,cvs.width,cvs.height);
+  const hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+  });
+  hands.setOptions({
+    maxNumHands:            2,    
+    modelComplexity:        1,    
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence:  0.5,  
+  });
+ 
+  hands.onResults(res => {
+    ctx.clearRect(0, 0, cvs.width, cvs.height); // 이전 프레임 스켈레톤 지우기
+ 
     if (res.multiHandLandmarks?.length) {
-      const lm=res.multiHandLandmarks[0];
-      drawHand(lm);
-      const f=countFingers(lm);
-      const z=lm[0].z;
-      const v=Math.max(0,Math.min(1,1-((z+0.25)/0.3)));
-      S.volume=v; setVol(v);
-      document.getElementById('vol-fill').style.height=(v*100)+'%';
-      document.getElementById('hud-fingers').textContent=f;
-      const fn=document.getElementById('finger-num');
-      fn.textContent=f; fn.classList.toggle('lit',f>0);
-      scheduleDegree(f>=1&&f<=7?f-1:-1);
+      let totalFingers = 0;
+      res.multiHandLandmarks.forEach((lm, idx) => {
+        drawHand(lm);
+        const isUserRight = res.multiHandedness?.[idx]?.label === 'Left';
+        totalFingers += countFingers(lm, isUserRight);
+      });
+      totalFingers = Math.min(totalFingers, 7); 
+      const z = res.multiHandLandmarks[0][0].z;
+      const v = Math.max(0, Math.min(1, 1 - ((z + 0.25) / 0.3)));
+      S.volume = v;
+      setVol(v);
+      document.getElementById('vol-fill').style.height = (v * 100) + '%';
+ 
+
+      document.getElementById('hud-fingers').textContent = totalFingers;
+      const fn = document.getElementById('finger-num');
+      fn.textContent = totalFingers;
+      fn.classList.toggle('lit', totalFingers > 0); 
+ 
+      scheduleDegree(totalFingers >= 1 && totalFingers <= 7 ? totalFingers - 1 : -1);
+ 
     } else {
-      document.getElementById('hud-fingers').textContent='—';
-      const fn=document.getElementById('finger-num');
-      fn.textContent='—'; fn.classList.remove('lit');
+      document.getElementById('hud-fingers').textContent = '—';
+      const fn = document.getElementById('finger-num');
+      fn.textContent = '—';
+      fn.classList.remove('lit');
       scheduleDegree(-1);
     }
   });
-  const cam=new Camera(vid,{onFrame:async()=>{await hands.send({image:vid});},width:640,height:480});
-  cam.start().catch(()=>{document.getElementById('no-cam').style.display='block';});
+ 
+  const cam = new Camera(vid, {
+    onFrame: async () => { await hands.send({ image: vid }); },
+    width: 640, height: 480,
+  });
+  cam.start().catch(() => {
+    document.getElementById('no-cam').style.display = 'block';
+  });
 }
 
+// event listeners
 document.getElementById('settings-btn').addEventListener('click',()=>{
   document.getElementById('settings-panel').classList.toggle('open');
 });
@@ -214,7 +261,6 @@ document.getElementById('start-btn').addEventListener('click',async()=>{
   await Tone.start();
   initAudio();
   document.getElementById('start-overlay').style.display='none';
-  document.getElementById('main').style.display = 'block';
   resizeCvs();
   buildPiano();
   initMP();
